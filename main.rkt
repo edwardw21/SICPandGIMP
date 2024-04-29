@@ -506,25 +506,32 @@
          flip-horiz flip-vert rotate90 rotate180 rotate270
          superpose beside beside3 above3 below)
 
-(define (transform-painter painter origin corner1 corner2)
-  (compose painter (make-relative-frame origin corner1 corner2)))
+(define (transform-painter painter origin corner1 corner2) ; takes in: painters (cons), outputs painter procedure
+  (compose (get-painter-procedure painter) (make-relative-frame origin corner1 corner2)))
 
-(define (flip-horiz p) (transform-painter p (vect 1. 0.) (vect 0. 0.) (vect 1. 1.)))
-(define (flip-vert p)  (transform-painter p (vect 0. 1.) (vect 1. 1.) (vect 0. 0.)))
-(define (rotate90 p)   (transform-painter p (vect 1. 0.) (vect 1 1)   (vect 0. 0.)))
+(define (flip-horiz p) (cons (get-aspect-ratio p)
+                             (transform-painter p (vect 1. 0.) (vect 0. 0.) (vect 1. 1.))))
+(define (flip-vert p)  (cons (get-aspect-ratio p)
+                             (transform-painter p (vect 0. 1.) (vect 1. 1.) (vect 0. 0.))))
+(define (rotate90 p)   (cons (/ 1.0 (get-aspect-ratio p)) ; aspect ratio reciprocated
+                             (transform-painter p (vect 1. 0.) (vect 1 1)   (vect 0. 0.))))
 (define rotate180      (repeated rotate90 2))
 (define rotate270      (repeated rotate90 3))
 
-(define (superpose . painters)
+(define (superpose . painters) ; takes in: painter procedures, not painters (not cons objects)
   (λ (frame)
     (for ([painter painters])
       (painter frame))))
 
 (define (beside painter1 painter2)
-  (define split-point (vect .5 0.))
-  (superpose
-   (transform-painter painter1 zero-vector split-point (vect 0. 1.))
-   (transform-painter painter2 split-point (vect 1 0)  (vect .5 1.))))
+  (define aspx-1 (get-aspect-ratio painter1))
+  (define aspx-2 (get-aspect-ratio painter2))
+  (define split-coord (/ aspx-1 (+ aspx-1 aspx-2)))
+  ;(define split-point (vect .5 0.)) ; compute according to aspect ratios instead
+  (cons (+ aspx-1 aspx-2)
+        (superpose
+         (transform-painter painter1 zero-vector (vect split-coord 0.) (vect 0. 1.))
+         (transform-painter painter2 (vect split-coord 0.) (vect 1 0)  (vect split-coord 1.)))))
 
 (define (beside3 painter1 painter2 painter3)
   (define split-point1 (vect (/ 1. 3) 0.))
@@ -656,5 +663,8 @@
 (paint einstein)
 (paint yourname)
 (paint-rect yourname)
+(paint-rect (flip-horiz yourname))
+(paint-rect (flip-vert yourname))
+(paint-rect (beside einstein yourname))
 
 
