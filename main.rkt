@@ -9,7 +9,8 @@
 (require (for-syntax syntax/parse)
          racket/draw
          racket/snip
-         racket/runtime-path)
+         racket/runtime-path
+         racket/gui/base)
 
 (define-runtime-path einstein-file "einstein2.jpg")
 (define-runtime-path yourname-file "yourname.jpg")
@@ -662,5 +663,16 @@
 (paint-rect (flip-vert yourname))
 (paint-rect (beside einstein yourname))
 (paint-rect (above3 yourname einstein yourname))
+(define einsteinyourname
+  (beside einstein yourname))
 
+
+;;; to save image to disk
+
+(define (paint-to-png painter filename)
+  (define snip (paint-rect painter))
+  (define bitmap (send snip get-bitmap))
+  (send bitmap save-file filename 'png))
+
+(paint-to-png einsteinyourname "einsteinyourname.png")
 
