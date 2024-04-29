@@ -534,24 +534,19 @@
          (transform-painter painter2 (vect split-coord 0.) (vect 1 0)  (vect split-coord 1.)))))
 
 (define (beside3 painter1 painter2 painter3)
-  (define split-point1 (vect (/ 1. 3) 0.))
-  (define split-point2 (vect (/ 2. 3) 0.))  
-  (superpose
-    (transform-painter painter1 zero-vector  split-point1  (vect    0.    1.))
-    (transform-painter painter2 split-point1 split-point2  (vect (/ 1. 3) 1.))
-    (transform-painter painter3 split-point2 (vect 1. 0.)  (vect (/ 2. 3) 1.))))
+  (beside painter1
+          (beside painter2 painter3))) ; now we can just do it like this
 
 (define (above3 painter1 painter2 painter3)
-  (define 1/3. (/ 1. 3.))
-  (define 2/3. (/ 2. 3.))
-  (superpose
-   (transform-painter painter1 (vect 0. 2/3.) (vect 1. 2/3.) (vect 0.   1.))
-   (transform-painter painter2 (vect 0. 1/3.) (vect 1. 1/3.) (vect 0. 2/3.))
-   (transform-painter painter3 (vect 0. 0.)   (vect 1. 0.)   (vect 0. 1/3.))))
+  (above painter1
+         (above painter2 painter3)))
 
 (define (below painter1 painter2)
   (rotate270 (beside (rotate90 painter2)
                      (rotate90 painter1))))
+
+(define (above painter1 painter2)
+  (below painter2 painter1))
 
 ;;;
 ;;; Predefined Basic Painters
@@ -666,5 +661,6 @@
 (paint-rect (flip-horiz yourname))
 (paint-rect (flip-vert yourname))
 (paint-rect (beside einstein yourname))
+(paint-rect (above3 yourname einstein yourname))
 
 
