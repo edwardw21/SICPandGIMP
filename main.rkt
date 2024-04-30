@@ -390,8 +390,10 @@
          with-brush
          ;
          paint
+         paint-rect
          paint-hi-res
          paint-hires
+         paint-to-png
          ;
 
          (contract-out [number->painter (-> (and/c natural-number/c (<=/c 255)) any/c)]
@@ -470,6 +472,13 @@
                   )))))
 
 (define load-painter bitmap->painter)
+
+;;; to save image to disk
+
+(define (paint-to-png painter filename)
+  (define snip (paint-rect painter))
+  (define bitmap (send snip get-bitmap))
+  (send bitmap save-file filename 'png))
 
 ;;; Procedure Painter
 ;;; NOTE: not sure how this size parameter works, for now ignore as this function doesn't seem important for us
@@ -656,23 +665,16 @@
 
 ;(echo (escher))
 
-(paint einstein)
-(paint yourname)
-(paint-rect yourname)
-(paint-rect (flip-horiz yourname))
-(paint-rect (flip-vert yourname))
-(paint-rect (beside einstein yourname))
-(paint-rect (above3 yourname einstein yourname))
-(define einsteinyourname
-  (beside einstein yourname))
+;(paint einstein)
+;(paint yourname)
+;(paint-rect yourname)
+;(paint-rect (flip-horiz yourname))
+;(paint-rect (flip-vert yourname))
+;(paint-rect (beside einstein yourname))
+;(paint-rect (above3 yourname einstein yourname))
+;(define einsteinyourname
+;  (beside einstein yourname))
 
 
-;;; to save image to disk
-
-(define (paint-to-png painter filename)
-  (define snip (paint-rect painter))
-  (define bitmap (send snip get-bitmap))
-  (send bitmap save-file filename 'png))
-
-(paint-to-png einsteinyourname "einsteinyourname.png")
+;(paint-to-png einsteinyourname "einsteinyourname.png")
 
