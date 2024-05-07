@@ -17,6 +17,7 @@ The changes we add are:
 
 - creating new predicates corresponding to function calls to built-in image manipulation operations
 - creating the corresponding generic procedures to parse these function calls
+- creating a new file imageops.scm to store the procedures for the image operations (imageops.scm, which should also be added to the load-spec)
 
 Example invocation: 
 
