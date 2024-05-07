@@ -20,7 +20,7 @@ You should have received a copy of the GNU General Public License
 along with SDF.  If not, see <https://www.gnu.org/licenses/>.
 
 |#
-
+
 ;;;; Core of extended Scheme interpreter
 
 
@@ -59,12 +59,15 @@ along with SDF.  If not, see <https://www.gnu.org/licenses/>.
   (match-args variable? environment?)
   lookup-variable-value)
 
+#|
 ;; coderef: quoted
 (define-generic-procedure-handler g:eval
   (match-args quoted? environment?)
   (lambda (expression environment)
     (text-of-quotation expression)))
+|#
 
+#|
 ;; coderef: lambda
 (define-generic-procedure-handler g:eval
   (match-args lambda? environment?)
@@ -73,7 +76,7 @@ along with SDF.  If not, see <https://www.gnu.org/licenses/>.
      (lambda-parameters expression)
      (lambda-body expression)
      environment)))
-
+
 ;; coderef: if
 (define-generic-procedure-handler g:eval
   (match-args if? environment?)
@@ -105,6 +108,7 @@ along with SDF.  If not, see <https://www.gnu.org/licenses/>.
     (evaluate-sequence (begin-actions expression)
                        environment)))
 
+
 (define (evaluate-sequence actions environment)
   (cond ((null? actions)
          (error "Empty sequence"))
@@ -114,6 +118,7 @@ along with SDF.  If not, see <https://www.gnu.org/licenses/>.
          (g:eval (car actions) environment)
          (evaluate-sequence (cdr actions)
                             environment))))
+|#
 
 ;; coderef: definition
 (define-generic-procedure-handler g:eval
@@ -124,11 +129,20 @@ along with SDF.  If not, see <https://www.gnu.org/licenses/>.
       environment)
     (definition-variable expression)))
 
+#|
 ;; coderef: macro-definition
 (define-generic-procedure-handler g:eval
   (match-args macro-definition? environment?)
   (lambda (expression environment)
-  ))   
+    (let ((macro-exp (macro-definition-exp expression)) ; -> (rule pattern handler-body)
+	  (macro-res (macro-definition-result expression))) ; -> '(make-rule etc. etc.)
+      (let ((rule (car macro-exp))
+	    (args (cdr macro-exp)))
+	(define-syntax rule
+	  (syntax-rules ()
+	    ((_ args ...)
+	     (macro-res args ...)))))))) ; apply macro result template to args
+|#
 
 ;; coderef: assignment
 (define-generic-procedure-handler g:eval
@@ -137,7 +151,7 @@ along with SDF.  If not, see <https://www.gnu.org/licenses/>.
     (set-variable-value! (assignment-variable expression)
       (g:eval (assignment-value expression) environment)
       environment)))
-
+
 ;;; Unlike the traditional Scheme APPLY, this APPLY takes
 ;;; three arguments: the procedure to be applied, the
 ;;; unevaluated operands, and the calling environment.  This
@@ -198,5 +212,21 @@ along with SDF.  If not, see <https://www.gnu.org/licenses/>.
   (lambda (procedure operands calling-environment)
     (let ((results (map (lambda (proc)
                           (g:apply proc operands calling-environment))
-                        (vector->list procedure))))
-      (list->vector results))))
+                        (vector->list procedure)))) ; convert to list to be mapped
+      (list->vector results)))) ; convert back to vector
+
+;;;; special procedures for image DSL compiler
+
+;; coderef: vstack
+(define-generic-procedure-handler g:eval
+  (match-args vstack? environment?)
+  (lambda (expression environment)
+    (g:apply vstack
+	     (operands expression)
+	     environment)))
+
+(define (vstack . images)
+  (display "called vstack")
+  (newline)
+  (display images)
+  (newline))
