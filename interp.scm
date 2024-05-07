@@ -225,8 +225,3 @@ along with SDF.  If not, see <https://www.gnu.org/licenses/>.
 	     (operands expression)
 	     environment)))
 
-(define (vstack . images)
-  (display "called vstack")
-  (newline)
-  (display images)
-  (newline))
