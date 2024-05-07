@@ -47,13 +47,14 @@ along with SDF.  If not, see <https://www.gnu.org/licenses/>.
        (eq? (car exp) tag)))
 (register-predicate! tagged-list? 'tagged-list)
 
+#|
 ;;; Quotations
 
 (define (quoted? exp) (tagged-list? exp 'quote))
 (register-predicate! quoted? 'quoted)
 
 (define (text-of-quotation quot) (cadr quot))
-
+|#
 
 ;;; Assignment--- SET!
 
@@ -85,6 +86,7 @@ along with SDF.  If not, see <https://www.gnu.org/licenses/>.
             (cons (cdadr defn)          ;; = (DEFINE  foo
                   (cddr  defn)))))      ;;     (LAMBDA (p...) b...))
 
+#|
 ;;; Macro Definitions
 
 (define (macro-definition? exp) (tagged-list? exp 'define-macro))
@@ -110,6 +112,7 @@ along with SDF.  If not, see <https://www.gnu.org/licenses/>.
               (if (begin? body)
                   (begin-actions body)
                   (list body)))))
+|#
 
 (define procedure-parameter-name
   (simple-generic-procedure 'parameter-name 1 (lambda (x) x)))
@@ -130,13 +133,8 @@ along with SDF.  If not, see <https://www.gnu.org/licenses/>.
        (memq 'lazy (cdr var-decl))
        (memq 'memo (cdr var-decl))))
 (register-predicate! lazy-memo? 'lazy-memo)
-
-(define (extract-predicate var-decl)
-  (if (and (pair? var-decl)
-          (eq? 'restrict-to (cadr var-decl)))
-      (caddr var-decl)
-      #f))
 
+#|
 ;;; If conditionals
 
 (define (if? exp) (tagged-list? exp 'if))
@@ -185,7 +183,10 @@ along with SDF.  If not, see <https://www.gnu.org/licenses/>.
                     (cond-clause-consequent (car clauses))
                     (expand (cdr clauses))))))
   (expand (cond-clauses cond-exp)))
-
+|#
+
+#|
+
 (define (sequence->begin seq)
   (cond ((null? seq) seq)
         ((null? (cdr seq)) (car seq))
@@ -234,7 +235,9 @@ along with SDF.  If not, see <https://www.gnu.org/licenses/>.
           (else
            `(let (,(car specs))
               ,(lp (cdr specs)))))))
-
+
+|#
+
 ;;; Procedure applications -- NO-ARGS? and LAST-OPERAND? added
 
 (define (application? exp) (pair? exp))
@@ -280,3 +283,8 @@ along with SDF.  If not, see <https://www.gnu.org/licenses/>.
 (register-predicate! amb? 'amb)
 
 (define (amb-alternatives exp) (cdr exp))
+
+;;; Special procedures for image DSL compiler
+
+(define (vstack? exp) (tagged-list? exp 'vstack))
+(register-predicate! vstack? 'vstack)
