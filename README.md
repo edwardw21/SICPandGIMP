@@ -42,7 +42,7 @@ project is a folder which contains:
 
 - sdf (with generic-interpreter modified as above, two file modifications and imageops.scm addition)
 - compiler.scm (simple file to invoke the compiler in generic-interpreter)
-- sicpops.rkt (Racket file containing the contents of main.rkt in our repo), and compiled executable sicpops
+- sicpops.rkt (Racket file containing the contents of main.rkt in our repo), and compiled executable sicpops (compile with raco exe sicpops.rkt). 
 - scratch (folder to store intermediate image manipulation outputs)
 
 To start the project, open compiler.scm and run the commands, then enter ```(init)``` into the REPL to start the compiler. 
