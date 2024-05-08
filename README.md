@@ -31,13 +31,23 @@ cat
 eval> (define dog "dog.jpg")
 dog
 
-eval> (vstack (list cat 100 200) (list dog 300 400) "catdog.jpg")
-called vstack
-((cat.jpg 100 200) (dog.jpg 300 400) catdog.jpg)
-#!unspecific
+eval> (vstack "output:" "catdog.jpg" cat dog)
 ```
 
-The modified compiler and syntax are in compiler.scm and shared-syntax.scm, the appropriate changes will need to be made to the corresponding files in sdf/generic-interpreter for the project to run. 
+The modified compiler and syntax are in interp.scm and shared-syntax.scm, the appropriate changes will need to be made to the corresponding files in sdf/generic-interpreter for the project to run. Also, imageops.scm needs to be added to sdf/generic-interpreter. 
+
+The overall project setup is as follows:
+
+project is a folder which contains:
+
+- sdf (with generic-interpreter modified as above, two file modifications and imageops.scm addition)
+- compiler.scm (simple file to invoke the compiler in generic-interpreter)
+- sicpops.rkt (Racket file containing the contents of main.rkt in our repo), and compiled executable sicpops
+- scratch (folder to store intermediate image manipulation outputs)
+
+To start the project, open compiler.scm and run the commands, then enter ```(init)``` into the REPL to start the compiler. 
+
+
 
 
 
