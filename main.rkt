@@ -614,6 +614,20 @@
   (cons (* (get-width painter) factor)
         (cons (* (get-height painter) factor)
               (get-painter-procedure painter))))
+              
+(define (rotate-frame frame angle)
+  (let ((cos-angle (cos angle))
+        (sin-angle (sin angle)))
+    (let ((new-origin (origin-frame frame))
+          (new-edge1 (vector-add (vector-scale cos-angle (frame-edge1 frame))
+                               (vector-scale sin-angle (frame-edge2 frame))))
+          (new-edge2 (vector-add (vector-scale (- sin-angle) (frame-edge1 frame))
+                               (vector-scale cos-angle (frame-edge2 frame)))))
+      (make-frame new-origin new-edge1 new-edge2))))
+
+(define (rotate-painter painter angle)
+  (lambda (frame)
+    (painter (rotate-frame frame angle))))
 
 ;;;
 ;;; Predefined Basic Painters
