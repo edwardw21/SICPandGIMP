@@ -288,3 +288,12 @@ along with SDF.  If not, see <https://www.gnu.org/licenses/>.
 
 (define (vstack? exp) (tagged-list? exp 'vstack))
 (register-predicate! vstack? 'vstack)
+
+(define (hstack? exp) (tagged-list? exp 'hstack))
+(register-predicate! hstack? 'hstack)
+
+(define (rescale? exp) (tagged-list? exp 'rescale))
+(register-predicate! rescale? 'rescale)
+
+(define (save? exp) (tagged-list? exp 'save))
+(register-predicate! save? 'save)
