@@ -1,0 +1,10 @@
+(define (blur filename
+                blur-radius)
+    (let* ((image (car (gimp-file-load RUN-NONINTERACTIVE filename filename)))
+          (drawable (car (gimp-image-get-active-layer image))))
+    (set! new-layer (car (gimp-layer-copy drawable 0)))
+    (gimp-layer-set-name new-layer "Gauss-blurred")
+    (gimp-image-add-layer img new-layer 0)
+    (plug-in-gauss-rle 1 img new-layer blur-radius 1 1)
+    (gimp-invert new-layer)
+    (gimp-displays-flush)))
