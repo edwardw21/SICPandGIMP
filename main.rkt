@@ -256,18 +256,23 @@
   (parameterize ([current-bm bm]
                  [current-dc dc])
     (send dc scale 0.99 0.99) ; make the entire unit square visible
-    ((cdr painter) (frame (vect 0. 0.) (vect 1. 0.) (vect 0. 1.)))
+    ((get-painter-procedure painter) (frame (vect 0. 0.) (vect 1. 0.) (vect 0. 1.)))
     (make-object image-snip% bm)))
 
 ; Paint, but where we preserve the default aspect ratio instead of
 ; painting onto a unit square.
-(define (paint-rect painter #:height [height 200])
-  (define width (inexact->exact (round (* height (get-aspect-ratio painter))))) ; round to exact positive integer
+(define (paint-rect painter)
+  (define width (inexact->exact (round (get-width painter)))) ; round to exact positive integer
+  (define height (inexact->exact (round (get-height painter))))
+  (display width)
+  (newline)
+  (display height)
+  (newline)
   (define-values (bm dc) (make-painter-bitmap width height))
   (parameterize ([current-bm bm]
                  [current-dc dc])
     (send dc scale 0.99 0.99) ; unsure if these need to be changed or not
-    ((cdr painter) (frame (vect 0. 0.) (vect 1. 0.) (vect 0. 1.)))
+    ((get-painter-procedure painter) (frame (vect 0. 0.) (vect 1. 0.) (vect 0. 1.)))
     (make-object image-snip% bm)))
 
 ; For compatibility with old texts.
@@ -374,12 +379,19 @@
 ;;;
 
 ;;; New representation: painter = (cons of "default" aspect ratio (width/height) and painter procedure)
+;;; Updated representation: painter = (list of "default" width, "default" height, and painter procedure)
 
-(define (get-aspect-ratio painter)
+; (define (get-aspect-ratio painter)
+;  (car painter))
+
+(define (get-width painter)
   (car painter))
 
+(define (get-height painter)
+  (cadr painter))
+
 (define (get-painter-procedure painter)
-  (cdr painter))
+  (cddr painter))
 
 
 (provide painter/c
@@ -412,12 +424,13 @@
   (define color (new-color c))
   (define pen   (new-pen color))
   (define brush (new-brush color))
-  (cons 1.0 ; default aspect ratio
-        (λ (frame)
-          (with-frame frame #:who color->painter
-            (with-pen pen
-              (with-brush brush
-                (send (current-dc) draw-rectangle 0. 0. 1.0 1.0))))))) ; x y w h
+  (cons 200 ; default width
+        (cons 200 ; default height
+              (λ (frame)
+                (with-frame frame #:who color->painter
+                  (with-pen pen
+                    (with-brush brush
+                      (send (current-dc) draw-rectangle 0. 0. 1.0 1.0)))))))) ; x y w h
 
 ;;; Number Painter
 ;;;     A number painter is a color painter that draws a gray color from 0 to 255.
@@ -434,14 +447,15 @@
 (define (segments->painter segments)
   (define pen   black-pen)
   (define brush black-brush)
-  (cons 1.0 ; default aspect ratio
-        (λ (frame)
-          (with-frame frame #:who segments->painter
-            (with-pen pen
-              (with-brush brush
-                (for ([a-segment segments])
-                  (match-define (segment (vect x1 y1) (vect x2 y2)) a-segment)
-                  (send (current-dc) draw-line x1 y1 x2 y2))))))))
+  (cons 200 ; default width
+        (cons 200 ; default height
+              (λ (frame)
+                (with-frame frame #:who segments->painter
+                  (with-pen pen
+                    (with-brush brush
+                      (for ([a-segment segments])
+                        (match-define (segment (vect x1 y1) (vect x2 y2)) a-segment)
+                        (send (current-dc) draw-line x1 y1 x2 y2)))))))))
 
 (define (vects->painter vects)
   (segments->painter (vects->segments vects)))
@@ -460,16 +474,17 @@
   (define h (* 1. (send bm get-height)))
   (send flipped-dc set-initial-matrix (vector 1 0 0 -1 0 h))
   (send flipped-dc draw-bitmap bm 0 0)
-  (cons (/ w h) ; source aspect ratio
-        (λ (frame)
-          (with-frame frame #:who bitmap->painter
-            (send (current-dc) draw-bitmap-section-smooth
-                  flipped-bm ; source
-                  0. 0.      ; dest-x dest-y
-                  1. 1.      ; dest-width dest-height
-                  0. 0.      ; src-x src-y
-                  w  h       ; src-width src-height
-                  )))))
+  (cons w ; source width
+        (cons h ; source height
+              (λ (frame)
+                (with-frame frame #:who bitmap->painter
+                  (send (current-dc) draw-bitmap-section-smooth
+                        flipped-bm ; source
+                        0. 0.      ; dest-x dest-y
+                        1. 1.      ; dest-width dest-height
+                        0. 0.      ; src-x src-y
+                        w  h       ; src-width src-height
+                        ))))))
 
 (define load-painter bitmap->painter)
 
@@ -483,7 +498,7 @@
 ;;; Procedure Painter
 ;;; NOTE: not sure how this size parameter works, for now ignore as this function doesn't seem important for us
 (define (procedure->painter f [size 100])
-  ; f : vect -> color
+   ;f : vect -> color
   (define bm (make-object bitmap% size size))
   (define dc (new bitmap-dc% [bitmap bm]))
   (define size.0 (* 1.0 size))
@@ -519,12 +534,15 @@
 (define (transform-painter painter origin corner1 corner2) ; takes in: painters (cons), outputs painter procedure
   (compose (get-painter-procedure painter) (make-relative-frame origin corner1 corner2)))
 
-(define (flip-horiz p) (cons (get-aspect-ratio p)
-                             (transform-painter p (vect 1. 0.) (vect 0. 0.) (vect 1. 1.))))
-(define (flip-vert p)  (cons (get-aspect-ratio p)
-                             (transform-painter p (vect 0. 1.) (vect 1. 1.) (vect 0. 0.))))
-(define (rotate90 p)   (cons (/ 1.0 (get-aspect-ratio p)) ; aspect ratio reciprocated
-                             (transform-painter p (vect 1. 0.) (vect 1 1)   (vect 0. 0.))))
+(define (flip-horiz p) (cons (get-width p)
+                             (cons (get-height p)
+                                   (transform-painter p (vect 1. 0.) (vect 0. 0.) (vect 1. 1.)))))
+(define (flip-vert p)  (cons (get-width p)
+                             (cons (get-height p)
+                                   (transform-painter p (vect 0. 1.) (vect 1. 1.) (vect 0. 0.)))))
+(define (rotate90 p)   (cons (get-height p)
+                             (cons (get-width p)
+                                   (transform-painter p (vect 1. 0.) (vect 1 1)   (vect 0. 0.)))))
 (define rotate180      (repeated rotate90 2))
 (define rotate270      (repeated rotate90 3))
 
@@ -534,14 +552,20 @@
       (painter frame))))
 
 (define (beside painter1 painter2)
-  (define aspx-1 (get-aspect-ratio painter1))
-  (define aspx-2 (get-aspect-ratio painter2))
+  (define p1-width (get-width painter1))
+  (define p1-height (get-height painter1))
+  (define aspx-1 (/ p1-width p1-height))
+  (define p2-width (get-width painter2))
+  (define p2-height (get-height painter2))
+  (define aspx-2 (/ p2-width p2-height))
+  (define res-height (max p1-height p2-height))
   (define split-coord (/ aspx-1 (+ aspx-1 aspx-2)))
   ;(define split-point (vect .5 0.)) ; compute according to aspect ratios instead
-  (cons (+ aspx-1 aspx-2)
-        (superpose
-         (transform-painter painter1 zero-vector (vect split-coord 0.) (vect 0. 1.))
-         (transform-painter painter2 (vect split-coord 0.) (vect 1 0)  (vect split-coord 1.)))))
+  (cons (* (+ aspx-1 aspx-2) res-height)
+        (cons res-height
+              (superpose
+               (transform-painter painter1 zero-vector (vect split-coord 0.) (vect 0. 1.))
+               (transform-painter painter2 (vect split-coord 0.) (vect 1 0)  (vect split-coord 1.))))))
 
 (define (beside3 painter1 painter2 painter3)
   (beside painter1
@@ -665,16 +689,17 @@
 
 ;(echo (escher))
 
-;(paint einstein)
-;(paint yourname)
-;(paint-rect yourname)
-;(paint-rect (flip-horiz yourname))
-;(paint-rect (flip-vert yourname))
-;(paint-rect (beside einstein yourname))
-;(paint-rect (above3 yourname einstein yourname))
-;(define einsteinyourname
-;  (beside einstein yourname))
+(paint einstein)
+(paint yourname)
+(paint-rect yourname)
+(paint-rect (flip-horiz yourname))
+(paint-rect (flip-vert yourname))
+(paint-rect (beside einstein yourname))
+(paint-rect (above yourname einstein))
+(paint-rect (above3 yourname yourname yourname))
+(define einsteinyourname
+  (beside einstein yourname))
 
 
-;(paint-to-png einsteinyourname "einsteinyourname.png")
+(paint-to-png einsteinyourname "einsteinyourname.png")
 
