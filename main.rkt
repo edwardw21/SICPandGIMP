@@ -10,7 +10,8 @@
          racket/draw
          racket/snip
          racket/runtime-path
-         racket/gui/base)
+         racket/gui/base
+         racket/cmdline)
 
 (define-runtime-path einstein-file "einstein2.jpg")
 (define-runtime-path yourname-file "yourname.jpg")
@@ -488,6 +489,11 @@
 
 (define load-painter bitmap->painter)
 
+(define (file->painter filename)
+  (define file (build-path filename))
+  ; (define-runtime-path file filename)
+  (bitmap->painter file))
+
 ;;; to save image to disk
 
 (define (paint-to-png painter filename)
@@ -551,6 +557,17 @@
     (for ([painter painters])
       (painter frame))))
 
+(define (beside-list painters)
+  (cond
+    ((null? painters) (error "Empty list of painters")) ; Error if the list is empty
+    ((null? (cdr painters)) (car painters)) ; Base case: return the single painter if only one is provided
+    (else
+     (let* ((first-painter (car painters))
+            (rest-painters (cdr painters))
+            (beside-rest (beside-list rest-painters)))
+       (beside first-painter beside-rest))))) ; Recursively compute beside operation
+
+
 (define (beside painter1 painter2)
   (define p1-width (get-width painter1))
   (define p1-height (get-height painter1))
@@ -579,8 +596,24 @@
   (rotate270 (beside (rotate90 painter2)
                      (rotate90 painter1))))
 
+(define (above-list painters)
+  (cond
+    ((null? painters) (error "Empty list of painters")) ; Error if the list is empty
+    ((null? (cdr painters)) (car painters)) ; Base case: return the single painter if only one is provided
+    (else
+     (let* ((first-painter (car painters))
+            (rest-painters (cdr painters))
+            (above-rest (above-list rest-painters)))
+       (above first-painter above-rest))))) ; Recursively compute above operation
+
+
 (define (above painter1 painter2)
   (below painter2 painter1))
+
+(define (rescale painter factor)
+  (cons (* (get-width painter) factor)
+        (cons (* (get-height painter) factor)
+              (get-painter-procedure painter))))
 
 ;;;
 ;;; Predefined Basic Painters
@@ -691,15 +724,48 @@
 
 (paint einstein)
 (paint yourname)
-(paint-rect yourname)
-(paint-rect (flip-horiz yourname))
-(paint-rect (flip-vert yourname))
-(paint-rect (beside einstein yourname))
-(paint-rect (above yourname einstein))
-(paint-rect (above3 yourname yourname yourname))
-(define einsteinyourname
-  (beside einstein yourname))
+;(paint-rect yourname)
+;(paint-rect (flip-horiz yourname))
+;(paint-rect (flip-vert yourname))
+;(paint-rect (beside einstein yourname))
+;(paint-rect (above yourname einstein))
+;(paint-rect (above3 yourname yourname yourname))
+;(define einsteinyourname
+  ;(beside einstein yourname))
 
 
-(paint-to-png einsteinyourname "einsteinyourname.png")
+;(paint-to-png einsteinyourname "scratch/einsteinyourname.png")
 
+;;; executable input format: ./main [operation] [outputfilepath]
+
+(define (main args)
+  ;(display "running main")
+  ;(newline)
+  (define optype (car args))
+  (define output-loc (cadr args))
+  (define file-list (cddr args))
+  ;(display "outputting to ")
+  ;(display (cadr args))
+  ;(newline)
+  (cond
+    ((equal? optype "hstack")
+     (begin
+       (define image-list (map file->painter file-list))
+       (paint-to-png (beside-list image-list) output-loc)))
+    ((equal? optype "vstack")
+     (begin
+       (define image-list (map file->painter file-list))
+       (paint-to-png (above-list image-list) output-loc)))
+    ((equal? optype "rescale")
+     (begin
+       (define image (file->painter (car file-list)))
+       (define factor (string->number (cadr file-list)))
+       (paint-to-png (rescale image factor) output-loc))))
+  (newline))
+
+(define cmdlineargs (current-command-line-arguments))
+
+(display (vector->list (current-command-line-arguments)))
+(newline)
+(display (length (vector->list (current-command-line-arguments))))
+(main (vector->list (current-command-line-arguments)))
