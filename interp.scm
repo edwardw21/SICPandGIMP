@@ -225,3 +225,26 @@ along with SDF.  If not, see <https://www.gnu.org/licenses/>.
 	     (operands expression)
 	     environment)))
 
+;;; coderef: hstack
+(define-generic-procedure-handler g:eval
+  (match-args hstack? environment?)
+  (lambda (expression environment)
+    (g:apply hstack
+	     (operands expression)
+	     environment)))
+
+;;; coderef: rescale
+(define-generic-procedure-handler g:eval
+  (match-args rescale? environment?)
+  (lambda (expression environment)
+    (g:apply rescale
+	     (operands expression)
+	     environment)))
+
+;;; coderef: save
+(define-generic-procedure-handler g:eval
+  (match-args save? environment?)
+  (lambda (expression environment)
+    (g:apply save
+	     (operands expression)
+	     environment)))
