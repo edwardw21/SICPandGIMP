@@ -25,13 +25,13 @@ Example invocation:
 (init)
 
 
-eval> (define cat "cat.jpg")
+eval> (define cat "images/cat.jpeg")
 cat
 
-eval> (define dog "dog.jpg")
+eval> (define dog "images/dog.jpge")
 dog
 
-eval> (vstack "output:" "catdog.jpg" cat dog)
+eval> (vstack "output:" "images/catdog.jpeg" cat dog)
 ```
 
 The modified compiler and syntax are in interp.scm and shared-syntax.scm, the appropriate changes will need to be made to the corresponding files in sdf/generic-interpreter for the project to run. Also, imageops.scm needs to be added to sdf/generic-interpreter. 
@@ -45,7 +45,7 @@ project is a folder which contains:
 - sicpops.rkt (Racket file containing the contents of main.rkt in our repo), and compiled executable sicpops (compile with raco exe sicpops.rkt). 
 - scratch (folder to store intermediate image manipulation outputs)
 
-To start the project, open compiler.scm and run the commands, then enter ```(init)``` into the REPL to start the compiler. 
+To start the project, open run.scm and run the commands.
 
 
 

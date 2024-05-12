@@ -1,0 +1,8 @@
+(load "sdf/manager/load")
+(manage 'new 'generic-interpreter)
+(init)
+
+(define cat "images/cat.jpeg")
+(define dog "images/dog.jpeg")
+
+(vstack "output:" "catdog.jpeg" cat dog)

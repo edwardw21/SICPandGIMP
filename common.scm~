@@ -1,0 +1,23 @@
+(define (split-string str delimiter)
+  (let loop ((pos 0)
+             (acc '()))
+    (let ((next-pos (string-index str delimiter pos)))
+      (if (not next-pos)
+          (reverse (cons (substring str pos (string-length str)) acc))
+          (loop (+ next-pos 1)
+                (cons (substring str pos next-pos) acc))))))
+
+(define (string-index str char start)
+  (let loop ((i start))
+    (cond ((>= i (string-length str)) #f)
+          ((char=? (string-ref str i) char) i)
+          (else (loop (+ i 1))))))
+
+(define (files-in-directory)
+  (call-with-output-string
+    (lambda (port)
+    (run-shell-command "ls"
+      'output port
+      ;; 'output-buffer-size 4096
+      ;; 'shell-file-name "/bin/bash"
+      ))))

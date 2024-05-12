@@ -1,0 +1,161 @@
+;; #lang racket
+(load "./sdf/manager/load")
+(manage 'new 'generic-interpreter)
+;;;; Skeleton compiler code, based on SDF section 5.1
+
+(define (default-eval expression environment)
+  (cond ((application? expression)
+         (g:apply (g:advance
+                   (g:eval (operator expression)
+                           environment))
+                  (operands expression)
+                  environment))
+        (else
+         (error "Unknown expression type"
+                expression))))
+
+(define g:eval
+  (simple-generic-procedure 'eval 2 default-eval))
+
+(define g:advance
+  (simple-generic-procedure 'g:advance 1 (lambda (x) x)))
+
+;;;; self-evaluating use cases: probably only when we pass a constant or string as a parameter to an operation
+
+(define-generic-procedure-handler g:eval
+  (match-args self-evaluating? environment?)
+  (lambda (expression environment)
+    (declare (ignore environment))
+    expression))
+
+;;;; variable use cases: when referring to a stored image variable
+
+(define-generic-procedure-handler g:eval
+  (match-args variable? environment?)
+  lookup-variable-value)
+
+;;; definition use cases: when defining a variable for the first time (binding it to some image)
+
+(define-generic-procedure-handler g:eval
+  (match-args definition? environment?)
+  (lambda (expression environment)
+    (define-variable! (definition-variable expression)
+      (g:eval (definition-value expression) environment)
+      environment)
+    (definition-variable expression)))
+
+;;;; assignment use cases: when assigning a variable name to an image (after variable name is already defined)
+
+(define-generic-procedure-handler g:eval
+  (match-args assignment? environment?)
+  (lambda (expression environment)
+    (set-variable-value! (assignment-variable expression)
+      (g:eval (assignment-value expression) environment)
+      environment)))
+
+;;;; apply generic procedures
+
+(define (default-apply procedure operands calling-environment)
+  (declare (ignore operands calling-environment))
+  (error "Unknown procedure type" procedure))
+
+(define g:apply
+  (simple-generic-procedure 'apply 3 default-apply))
+
+;;; strict primitive procedures should suffice? 
+
+(define-generic-procedure-handler g:apply
+  (match-args strict-primitive-procedure?
+              operands?
+              environment?)
+  (lambda (procedure operands calling-environment)
+    (apply-primitive-procedure procedure
+      (eval-operands operands calling-environment))))
+
+(define (eval-operands operands calling-environment)
+  (map (lambda (operand)
+         (g:advance (g:eval operand calling-environment)))
+       operands))
+
+(exit)
+
+(let* ((original-image "~/github/SICPandGIMP/project/cat.png")
+       (copy-image "~/github/SICPandGIMP/project/cat1.png")
+       (image (car (file-jpeg-load RUN-NONINTERACTIVE original-image original-image)))
+       (drawable (car (gimp-image-get-active-layer image))))
+  (gimp-brightness-contrast drawable 15 0)
+  (gimp-file-save RUN-NONINTERACTIVE image drawable copy-image copy-image 0.9 0 0 0 "" 0 1 0 1)
+  (gimp-quit 0))
+
+(define available-procedures '(brighten))
+
+(define (assert predicate item . error-msg)
+  (define msg (if (null? error-msg)
+		  "assertion failed"
+		  (car error-msg)))
+  (if (not (predicate item))
+      (error msg)))
+
+(define (ensure-string inp)
+  (assert (lambda (x) (or (string? x) (symbol? x))) inp)
+  (if (symbol? inp)
+      (symbol->string inp)
+      inp))
+
+(define ensure-string
+  (simple-generic-procedure 'enure-string 1 #f))
+
+(define-generic-procedure-handler ensure-string
+  (match-args string?)
+  (lambda (value) value))
+
+(define-generic-procedure-handler ensure-string
+  (match-args number?)
+  (lambda (value)
+    (number->string value)))
+
+(define-generic-procedure-handler ensure-string
+  (match-args symbol?)
+  (lambda (value)
+    (symbol->string value)))
+
+(define (list->spaced-string lst)
+  (if (null? lst)
+      ""
+      (string-append
+       (ensure-string (car lst))
+       (let ((cdr-string (list->spaced-string (cdr lst))))
+	 (if (equal? cdr-string "")
+	     cdr-string
+	     (string-append " " cdr-string))))))
+
+(define-generic-procedure-handler ensure-string
+  (match-args list?)
+  (lambda (value)
+    (list->spaced-string value)))
+
+(define-generic-procedure-handler ensure-string
+  (match-args boolean?)
+  (lambda (value)
+    (if value "#t" "#f")))
+
+(define (build-command procedure-name input-file output-file args)
+  (string-append
+    "gimp -i -b '("
+    (ensure-string procedure-name)
+    " \""
+    (ensure-string input-file)
+    "\" \""
+    (ensure-string output-file)
+    (let ((arg-string (ensure-string args))
+	  (command-termination ")' -b '(gimp-quit 0)'"))
+      (if (equal? arg-string "")
+	  (string-append "\"" command-termination)
+	  (string-append "\" " arg-string command-termination)))))
+
+(define (call-procedure procedure-name input-file output-file . args)
+  (run-shell-command (build-command
+		      procedure-name
+		      input-file
+		      output-file
+		      args)))
