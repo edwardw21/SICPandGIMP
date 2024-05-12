@@ -1,0 +1,8 @@
+(define (brighten input-file output-file)
+  (let* ((original-image input-file)
+       (copy-image output-file)
+       (image (car (file-jpeg-load RUN-NONINTERACTIVE original-image original-image)))
+       (drawable (car (gimp-image-get-active-layer image))))
+  (gimp-brightness-contrast drawable 15 0)
+  (file-jpeg-save RUN-NONINTERACTIVE image drawable copy-image copy-image 0.9 0 0 0 "" 0 1 0 1)
+  (gimp-quit 0)))
