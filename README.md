@@ -25,13 +25,13 @@ Example invocation:
 (init)
 
 
-eval> (define cat "images/cat.jpeg")
+eval> (define cat "cat.jpeg")
 cat
 
-eval> (define dog "images/dog.jpge")
+eval> (define dog "dog.jpeg")
 dog
 
-eval> (vstack "output:" "images/catdog.jpeg" cat dog)
+eval> (vstack "output:" "catdog.jpeg" cat dog)
 ```
 
 The modified compiler and syntax are in interp.scm and shared-syntax.scm, the appropriate changes will need to be made to the corresponding files in sdf/generic-interpreter for the project to run. Also, imageops.scm needs to be added to sdf/generic-interpreter. 
