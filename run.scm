@@ -1,7 +1,7 @@
 (load "sdf/manager/load")
 (manage 'new 'generic-interpreter)
 
-;; Direct interaction with gimp-submodule
+;; Direct interaction with gimp-module
 (load "sdf/generic-interpreter/modules/gimp")
 (call-procedure 'brighten "cat.jpeg" "cat_brighten.jpeg")
 
